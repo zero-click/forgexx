@@ -1,0 +1,85 @@
+#!/bin/zsh
+# Forgexx - Mac Configuration Sync via GitHub
+# Main entry point
+
+set -e
+
+# Get the script directory (zsh syntax)
+SCRIPT_DIR=${0:a:h}
+LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
+
+# Source core libraries first (logger before anything else!)
+source "$LIB_DIR/core/logger.sh"
+source "$LIB_DIR/core/config.sh"
+source "$LIB_DIR/core/git.sh"
+source "$LIB_DIR/core/commands.sh"
+
+# Source base module before other modules
+source "$LIB_DIR/modules/base.sh"
+
+# Source modules (they don't need to source base.sh anymore)
+source "$LIB_DIR/modules/homebrew.sh"
+source "$LIB_DIR/modules/dotfiles.sh"
+source "$LIB_DIR/modules/vscode.sh"
+source "$LIB_DIR/modules/npm.sh"
+source "$LIB_DIR/modules/ssh.sh"
+source "$LIB_DIR/modules/iterm2.sh"
+source "$LIB_DIR/modules/git.sh"
+
+# Version
+FORGEXX_VERSION="0.1.0"
+
+# Main function
+main() {
+    # Load configuration
+    config_load
+
+    # Parse command
+    local command=${1:-help}
+    shift || true
+
+    case "$command" in
+        init)
+            cmd_init "$@"
+            ;;
+        backup)
+            cmd_backup
+            ;;
+        restore)
+            cmd_restore
+            ;;
+        status)
+            cmd_status
+            ;;
+        pull)
+            cmd_pull
+            ;;
+        push)
+            cmd_push
+            ;;
+        add)
+            cmd_add "$@"
+            ;;
+        remove|rm)
+            cmd_remove "$@"
+            ;;
+        modules|list)
+            cmd_list_modules
+            ;;
+        help|--help|-h)
+            cmd_help
+            ;;
+        version|--version|-v)
+            echo "Forgexx v$FORGEXX_VERSION"
+            ;;
+        *)
+            log_error "Unknown command: $command"
+            echo
+            cmd_help
+            exit 1
+            ;;
+    esac
+}
+
+# Run main
+main "$@"
