@@ -25,10 +25,6 @@ homebrew_backup() {
     # Dump all packages, casks, and mas apps
     brew bundle dump --file="$brewfile_dir/Brewfile" --force --all
 
-    # Also create a Brewfile with just packages (for cross-machine compatibility)
-    brew bundle dump --file="$brewfile_dir/Brewfile.pkgs" --force  --no-cask --no-mas
-
-    log_success "Homebrew packages backed up to $brewfile_dir"
     return 0
 }
 
