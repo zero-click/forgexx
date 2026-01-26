@@ -48,7 +48,12 @@ zsh_restore() {
     if [[ ! -d "$ZSH_DIR" ]]; then
         log_info "Installing oh-my-zsh..."
         if command_exists git; then
+            mkdir -p "$HOME/.oh-my-zsh"
             git clone "$ZSH_REPO" "$ZSH_DIR"
+            if [[ $? -ne 0 ]]; then
+                log_error "Failed to clone oh-my-zsh repository"
+                return 1
+            fi
             log_success "oh-my-zsh installed to $ZSH_DIR"
         else
             log_error "Git is required to install oh-my-zsh"
@@ -62,7 +67,12 @@ zsh_restore() {
     if [[ ! -d "$ZPLUG_DIR" ]]; then
         log_info "Installing zplug (Zsh plugin manager)..."
         if command_exists git; then
+            mkdir -p "$HOME/.zplug"
             git clone "$ZPLUG_REPO" "$ZPLUG_DIR"
+            if [[ $? -ne 0 ]]; then
+                log_error "Failed to clone zplug repository"
+                return 1
+            fi
             log_success "zplug installed to $ZPLUG_DIR"
         else
             log_error "Git is required to install zplug"
