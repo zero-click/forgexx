@@ -25,6 +25,9 @@ source "$LIB_DIR/modules/npm.sh"
 source "$LIB_DIR/modules/ssh.sh"
 source "$LIB_DIR/modules/iterm2.sh"
 source "$LIB_DIR/modules/git.sh"
+source "$LIB_DIR/modules/tmux.sh"
+source "$LIB_DIR/modules/vim.sh"
+source "$LIB_DIR/modules/zsh.sh"
 
 # Version
 FORGEXX_VERSION="0.1.0"
