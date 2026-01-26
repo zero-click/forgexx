@@ -88,7 +88,7 @@ Forgexx 目前内置以下模块：
 |------|------|----------|
 | **base** | 核心模块 | (基础功能，不直接产生备份文件) |
 | **homebrew** | 包管理器 | 生成 `Brewfile` (包含 Taps, Brews, Casks, Mas) |
-| **dotfiles** | 配置文件 | 默认同步 `.zshrc`, `.gitconfig`, `.gitignore_global` 等 (可配置) |
+| **dotfiles** | 配置文件 | 默认同步 `.gitconfig`, `.gitignore_global` 等 (可配置) |
 | **vscode** | 编辑器 | `settings.json` 和 `extensions.txt` (插件列表) |
 | **npm** | Node.js | 全局安装的 npm 包列表 |
 | **git** | Git 配置 | `.gitconfig` 和 `.gitignore_global` |
