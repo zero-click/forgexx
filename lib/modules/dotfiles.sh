@@ -9,7 +9,7 @@ module_register "dotfiles" \
     "dotfiles_status"
 
 # Default dotfiles to sync
-FORGEXX_DOTFILES="${FORGEXX_DOTFILES:-.zshrc .vimrc .tmux.conf .gitconfig .gitignore_global}"
+FORGEXX_DOTFILES="${FORGEXX_DOTFILES:-.gitconfig .gitignore_global}"
 FORGEXX_DOTDIRS="${FORGEXX_DOTDIRS:-.config/nvim .config/alacritty}"
 
 # Backup dotfiles
