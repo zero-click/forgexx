@@ -52,8 +52,8 @@ forgexx init git@github.com:username/my-mac-config.git
 
 ```zsh
 # 默认启用 homebrew, dotfiles, vscode, npm
-# 你可以添加 git, ssh, iterm2 等
-export ENABLED_MODULES="homebrew dotfiles vscode git iterm2 npm ssh"
+# 你可以添加 git, ssh, iterm2, tmux, vim 等
+export ENABLED_MODULES="homebrew dotfiles vscode git iterm2 npm ssh tmux vim zsh"
 ```
 
 ### 4. 备份与同步
@@ -88,12 +88,15 @@ Forgexx 目前内置以下模块：
 |------|------|----------|
 | **base** | 核心模块 | (基础功能，不直接产生备份文件) |
 | **homebrew** | 包管理器 | 生成 `Brewfile` (包含 Taps, Brews, Casks, Mas) |
-| **dotfiles** | 配置文件 | 默认同步 `.zshrc`, `.vimrc`, `.tmux.conf` 等 (可配置) |
+| **dotfiles** | 配置文件 | 默认同步 `.zshrc`, `.gitconfig`, `.gitignore_global` 等 (可配置) |
 | **vscode** | 编辑器 | `settings.json` 和 `extensions.txt` (插件列表) |
 | **npm** | Node.js | 全局安装的 npm 包列表 |
 | **git** | Git 配置 | `.gitconfig` 和 `.gitignore_global` |
 | **ssh** | SSH | `~/.ssh/config` 和所有公钥 (`*.pub`)。**不备份私钥**。 |
 | **iterm2** | 终端 | iTerm2 配置文件 (`com.googlecode.iterm2.plist`) |
+| **tmux** | 终端复用器 | `.tmux.conf` 配置文件和 TPM 插件管理 |
+| **vim** | 编辑器 | `.vimrc` 配置文件和 Vundle 插件管理 |
+| **zsh** | Shell | `.zshrc` 配置文件和 zplug 插件管理 (依赖 oh-my-zsh) |
 
 ### Dotfiles 高级配置
 
@@ -101,7 +104,7 @@ Forgexx 目前内置以下模块：
 
 ```zsh
 # 自定义要同步的文件 (相对 $HOME)
-export FORGEXX_DOTFILES=".zshrc .bash_profile .vimrc .config/starship.toml"
+export FORGEXX_DOTFILES=".bash_profile .vimrc .config/starship.toml"
 
 # 自定义要同步的目录
 export FORGEXX_DOTDIRS=".config/nvim .config/alacritty"
@@ -120,6 +123,11 @@ Forggex 将所有数据保存在 `~/.forgexx/`：
     ├── dotfiles/       # dotfiles 模块数据
     ├── vscode/         # vscode 模块数据
     ├── git/            # git 模块数据
+    ├── ssh/            # ssh 模块数据
+    ├── iterm2/         # iterm2 模块数据
+    ├── tmux/           # tmux 模块数据
+    ├── vim/            # vim 模块数据
+    ├── zsh/            # zsh 模块数据
     └── ...
 ```
 
