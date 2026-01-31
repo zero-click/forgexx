@@ -87,7 +87,8 @@ confirm() {
     fi
 
     while true; do
-        read -p "$prompt" -n 1 -r response
+        echo -n "$prompt"
+        read -k 1 response
         echo
         response=${response:-$default}
 
