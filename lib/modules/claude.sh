@@ -146,10 +146,28 @@ claude_sanitize_settings() {
     log_success "已创建配置模板（敏感信息已移除）"
 }
 
-# Stub: Backup plugins manifest (Task 4)
+# Backup plugins manifest
 claude_backup_plugins() {
     local repo_dir=$1
-    log_warning "插件备份功能尚未实现"
+    local plugins_dir="$repo_dir/claude/plugins"
+
+    # Create plugins directory
+    mkdir -p "$plugins_dir"
+
+    local source_manifest="$HOME/.claude/plugins/installed_plugins.json"
+
+    if [[ ! -f "$source_manifest" ]]; then
+        log_warning "未找到插件清单，跳过"
+        return 0
+    fi
+
+    log_info "清理插件清单（移除用户特定路径）"
+
+    # Remove installPath field which contains user-specific home directory
+    jq 'del(.plugins[][].installPath)' "$source_manifest" > "$plugins_dir/installed_plugins.json"
+
+    local plugin_count=$(jq '.plugins | length' "$plugins_dir/installed_plugins.json")
+    log_success "已备份 $plugin_count 个插件清单"
 }
 
 # Stub: Backup skills (Task 5)
