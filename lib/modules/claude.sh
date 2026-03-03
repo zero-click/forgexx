@@ -170,10 +170,62 @@ claude_backup_plugins() {
     log_success "已备份 $plugin_count 个插件清单"
 }
 
-# Stub: Backup skills (Task 5)
+# Backup skills
 claude_backup_skills() {
     local repo_dir=$1
-    log_warning "技能备份功能尚未实现"
+    local skills_dir="$repo_dir/claude/skills"
+    local source_dir="$HOME/.claude/skills"
+
+    if [[ ! -d "$source_dir" ]]; then
+        log_warning "未找到 skills 目录，跳过"
+        return 0
+    fi
+
+    mkdir -p "$skills_dir"
+
+    local git_repos_file="$skills_dir/.git_repos.txt"
+    > "$git_repos_file"  # Empty the file
+
+    local local_count=0
+    local git_count=0
+
+    for skill_path in "$source_dir"/*; do
+        [[ -e "$skill_path" ]] || continue
+        local skill_name=$(basename "$skill_path")
+
+        if [[ -L "$skill_path" ]]; then
+            # Symlink - check if it points to a git repo
+            local target=$(readlink "$skill_path")
+            if [[ -d "$target/.git" ]]; then
+                local remote_url=$(git -C "$target" remote get-url origin 2>/dev/null || echo "")
+                if [[ -n "$remote_url" ]]; then
+                    echo "$skill_name|$remote_url" >> "$git_repos_file"
+                    ((git_count++))
+                    log_info "记录 git 仓库技能: $skill_name"
+                fi
+            fi
+        elif [[ -d "$skill_path" ]]; then
+            # Regular directory - copy entirely
+            if [[ "$skill_name" != ".git"* ]]; then
+                cp -R "$skill_path" "$skills_dir/"
+                ((local_count++))
+                log_info "复制本地技能: $skill_name"
+            fi
+        fi
+    done
+
+    if [[ $git_count -gt 0 ]]; then
+        log_success "已记录 $git_count 个 git 仓库技能"
+    fi
+
+    if [[ $local_count -gt 0 ]]; then
+        log_success "已复制 $local_count 个本地技能"
+    fi
+
+    # Remove .git_repos.txt if empty
+    if [[ ! -s "$git_repos_file" ]]; then
+        rm "$git_repos_file"
+    fi
 }
 
 # Stub: Restore configuration (Task 9)
