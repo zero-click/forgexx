@@ -183,7 +183,7 @@ claude_backup_skills() {
 
     mkdir -p "$skills_dir"
 
-    local git_repos_file="$skills_dir/.git_repos.txt"
+    local git_repos_file="$skills_dir/git_repos.txt"
     : > "$git_repos_file"  # Empty the file
 
     local local_count=0
@@ -225,7 +225,7 @@ claude_backup_skills() {
         log_success "已复制 $local_count 个本地技能"
     fi
 
-    # Remove .git_repos.txt if empty
+    # Remove git_repos.txt if empty
     if [[ ! -s "$git_repos_file" ]]; then
         rm "$git_repos_file"
     fi
@@ -354,7 +354,7 @@ claude_restore_skills() {
     mkdir -p "$target_dir"
 
     # Restore git-based skills
-    local git_repos_file="$skills_dir/.git_repos.txt"
+    local git_repos_file="$skills_dir/git_repos.txt"
     if [[ -f "$git_repos_file" ]]; then
         log_info "发现 git 仓库技能清单"
 
@@ -538,7 +538,7 @@ claude_check_skills() {
     fi
 
     # Git-based skills
-    local git_repos_file="$skills_dir/.git_repos.txt"
+    local git_repos_file="$skills_dir/git_repos.txt"
     if [[ -f "$git_repos_file" ]]; then
         local git_count=$(wc -l < "$git_repos_file" 2>/dev/null | tr -d ' ')
         echo "  ✓ Git 仓库技能: $git_count 个"
