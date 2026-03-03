@@ -478,38 +478,85 @@ confirm() {
     fi
 }
 
-# Stub: Check config status (Task 10)
+# Check configuration files status
 claude_check_config() {
     local repo_dir=$1
     local claude_dir="$repo_dir/claude"
 
-    if [[ -f "$claude_dir/CLAUDE.md" ]]; then
-        echo "  ✓ CLAUDE.md"
-    else
-        echo "  ✗ CLAUDE.md (未备份)"
+    if [[ ! -d "$claude_dir" ]]; then
+        echo "  ✗ 未找到备份"
+        return
     fi
 
-    if [[ -f "$claude_dir/settings.json.template" ]]; then
-        echo "  ✓ settings.json.template"
-    else
-        echo "  ✗ settings.json.template (未备份)"
-    fi
+    [[ -f "$claude_dir/settings.json.template" ]] && echo "  ✓ settings.json.template"
+    [[ -f "$claude_dir/CLAUDE.md" ]] && echo "  ✓ CLAUDE.md"
 
-    if [[ -d "$claude_dir/commands" ]] && [[ -n "$(ls -A $claude_dir/commands 2>/dev/null)" ]]; then
-        echo "  ✓ commands/"
+    if [[ -d "$claude_dir/commands" ]]; then
+        local cmd_count=$(find "$claude_dir/commands" -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [[ $cmd_count -gt 0 ]]; then
+            echo "  ✓ commands ($cmd_count 个文件)"
+        else
+            echo "  ✗ commands (未备份)"
+        fi
     else
-        echo "  ✗ commands/ (未备份或为空)"
+        echo "  ✗ commands (未备份)"
     fi
 }
 
-# Stub: Check plugins status (Task 10)
+# Check plugins status
 claude_check_plugins() {
     local repo_dir=$1
-    echo "  插件状态检查尚未实现"
+    local plugin_file="$repo_dir/claude/plugins/installed_plugins.json"
+
+    if [[ ! -f "$plugin_file" ]]; then
+        echo "  ✗ 未找到插件清单"
+        return
+    fi
+
+    local count=$(jq '.plugins | length' "$plugin_file" 2>/dev/null || echo "0")
+    echo "  ✓ 已备份 $count 个插件"
+
+    # Show plugin list
+    jq -r '.plugins | keys[]' "$plugin_file" 2>/dev/null | while read plugin; do
+        [[ -z "$plugin" ]] && continue
+        local version=$(jq -r ".plugins[\"$plugin\"][0].version" "$plugin_file" 2>/dev/null || echo "unknown")
+        echo "    - $plugin (v$version)"
+    done
 }
 
-# Stub: Check skills status (Task 10)
+# Check skills status
 claude_check_skills() {
     local repo_dir=$1
-    echo "  技能状态检查尚未实现"
+    local skills_dir="$repo_dir/claude/skills"
+
+    if [[ ! -d "$skills_dir" ]]; then
+        echo "  ✗ 未找到技能备份"
+        return
+    fi
+
+    # Git-based skills
+    local git_repos_file="$skills_dir/.git_repos.txt"
+    if [[ -f "$git_repos_file" ]]; then
+        local git_count=$(wc -l < "$git_repos_file" 2>/dev/null | tr -d ' ')
+        echo "  ✓ Git 仓库技能: $git_count 个"
+
+        while IFS='|' read -r skill_name repo_url; do
+            [[ -z "$skill_name" ]] && continue
+            echo "    - $skill_name"
+        done < "$git_repos_file"
+    fi
+
+    # Local skills
+    local local_skills=($(find "$skills_dir" -mindepth 1 -maxdepth 1 -type d ! -name ".git*" -exec basename {} \; 2>/dev/null))
+    if [[ ${#local_skills[@]} -gt 0 ]]; then
+        echo "  ✓ 本地技能: ${#local_skills[@]} 个"
+        for skill in "${local_skills[@]}"; do
+            echo "    - $skill"
+        done
+    fi
+
+    # No skills found
+    if [[ ! -f "$git_repos_file" ]] && [[ ${#local_skills[@]} -eq 0 ]]; then
+        echo "  ✗ 未找到技能备份"
+    fi
 }
