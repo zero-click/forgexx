@@ -52,8 +52,8 @@ forgexx init git@github.com:username/my-mac-config.git
 
 ```zsh
 # 默认启用 homebrew, dotfiles, vscode, npm
-# 你可以添加 git, ssh, iterm2, tmux, vim 等
-export ENABLED_MODULES="homebrew dotfiles vscode git iterm2 npm ssh tmux vim zsh"
+# 你可以添加 git, ssh, iterm2, tmux, vim, zsh, claude 等
+export ENABLED_MODULES="homebrew dotfiles vscode git iterm2 npm ssh tmux vim zsh claude"
 ```
 
 ### 4. 备份与同步
@@ -97,6 +97,49 @@ Forgexx 目前内置以下模块：
 | **tmux** | 终端复用器 | `.tmux.conf` 配置文件和 TPM 插件管理 |
 | **vim** | 编辑器 | `.vimrc` 配置文件和 Vundle 插件管理 |
 | **zsh** | Shell | `.zshrc` 配置文件和 zplug 插件管理 (依赖 oh-my-zsh) |
+| **claude** | Claude Code | `CLAUDE.md`, `commands/`, `settings.json.template`, `skills/`, `plugins/` |
+
+### Claude Code 模块
+
+Claude 模块 (`claude`) 用于在多台 macOS 机器之间同步 Claude Code 配置。
+
+**备份内容：**
+- `CLAUDE.md` - 全局配置和工作契约
+- `commands/` - 自定义命令定义
+- `settings.json.template` - 配置文件（已移除 API 密钥）
+- `plugins/installed_plugins.json` - 插件清单（用户路径已清理）
+- `skills/` - 自定义技能（Git 技能记录为 URL，本地技能完全复制）
+
+**不备份的内容：**
+- 用户会话和历史记录
+- 插件缓存目录（自动生成）
+- 临时文件和缓存
+
+**配置：**
+无需额外配置。模块使用合理的默认值：
+
+- Git 技能：自动检测，仅存储仓库 URL
+- 本地技能：完整复制到仓库
+- 插件：仅存储清单，通过 `claude plugin install` 重新安装
+
+**使用方法：**
+
+```bash
+# 启用模块
+forgexx add claude
+
+# 备份 Claude Code 配置
+forgexx backup
+
+# 在新机器上恢复
+forgexx restore
+
+# 查看状态
+forgexx status
+```
+
+**需要手动配置：**
+恢复后，你需要手动在 `~/.claude/settings.json` 中配置 API 密钥。
 
 ### Dotfiles 高级配置
 
@@ -128,6 +171,7 @@ Forggex 将所有数据保存在 `~/.forgexx/`：
     ├── tmux/           # tmux 模块数据
     ├── vim/            # vim 模块数据
     ├── zsh/            # zsh 模块数据
+    ├── claude/         # claude 模块数据
     └── ...
 ```
 
