@@ -193,24 +193,27 @@ claude_backup_skills() {
         [[ -e "$skill_path" ]] || continue
         local skill_name=$(basename "$skill_path")
 
-        if [[ -L "$skill_path" ]]; then
-            # Symlink - check if it points to a git repo
-            local target=$(readlink "$skill_path")
-            if [[ -d "$target/.git" ]]; then
-                local remote_url=$(git -C "$target" remote get-url origin 2>/dev/null || echo "")
-                if [[ -n "$remote_url" ]]; then
-                    echo "$skill_name|$remote_url" >> "$git_repos_file"
-                    ((git_count++))
-                    log_info "记录 git 仓库技能: $skill_name"
-                fi
+        # Skip hidden directories
+        [[ "$skill_name" == ".git"* ]] && continue
+
+        # Check if it's a git repository (works with symlinks, worktrees, regular repos)
+        local git_dir=$(git -C "$skill_path" rev-parse --git-dir 2>/dev/null || echo "")
+
+        if [[ -n "$git_dir" ]]; then
+            # It's a git repo - get the remote URL
+            local remote_url=$(git -C "$skill_path" remote get-url origin 2>/dev/null || echo "")
+            if [[ -n "$remote_url" ]]; then
+                echo "$skill_name|$remote_url" >> "$git_repos_file"
+                ((git_count++))
+                log_info "记录 git 仓库技能: $skill_name"
+            else
+                log_warning "git 仓库技能 $skill_name 没有 origin remote，跳过"
             fi
         elif [[ -d "$skill_path" ]]; then
-            # Regular directory - copy entirely
-            if [[ "$skill_name" != ".git"* ]]; then
-                cp -R "$skill_path" "$skills_dir/"
-                ((local_count++))
-                log_info "复制本地技能: $skill_name"
-            fi
+            # Local directory (not a git repo) - copy entirely
+            cp -R "$skill_path" "$skills_dir/"
+            ((local_count++))
+            log_info "复制本地技能: $skill_name"
         fi
     done
 
