@@ -228,22 +228,254 @@ claude_backup_skills() {
     fi
 }
 
-# Stub: Restore configuration (Task 9)
+# Restore configuration files
 claude_restore_config() {
     local repo_dir=$1
-    log_warning "配置恢复功能尚未实现"
+    local claude_dir="$repo_dir/claude"
+
+    if [[ ! -d "$claude_dir" ]]; then
+        log_warning "未找到 Claude 配置备份"
+        return 0
+    fi
+
+    # Restore CLAUDE.md
+    if [[ -f "$claude_dir/CLAUDE.md" ]]; then
+        if [[ -f "$HOME/.claude/CLAUDE.md" ]]; then
+            if ! claude_handle_conflict "$HOME/.claude/CLAUDE.md" "$claude_dir/CLAUDE.md"; then
+                log_info "跳过 CLAUDE.md"
+            fi
+        else
+            log_info "恢复 CLAUDE.md"
+            mkdir -p "$HOME/.claude"
+            cp "$claude_dir/CLAUDE.md" "$HOME/.claude/"
+            log_success "已恢复 CLAUDE.md"
+        fi
+    fi
+
+    # Restore commands
+    if [[ -d "$claude_dir/commands" ]]; then
+        mkdir -p "$HOME/.claude/commands"
+        cp -R "$claude_dir/commands/"* "$HOME/.claude/commands/" 2>/dev/null || true
+        log_success "已恢复 commands 目录"
+    fi
+
+    # Restore settings.json template
+    if [[ -f "$claude_dir/settings.json.template" ]]; then
+        log_info "发现 settings.json.template"
+        log_warning "请手动配置 API keys 和其他敏感信息"
+        echo ""
+        echo "配置文件位置: $claude_dir/settings.json.template"
+        echo "目标位置: \$HOME/.claude/settings.json"
+        echo ""
+        echo "建议操作："
+        echo "  1. 编辑配置文件填入真实值"
+        echo "  2. 复制到 \$HOME/.claude/settings.json"
+        echo ""
+
+        if confirm "是否现在创建配置文件？"; then
+            mkdir -p "$HOME/.claude"
+            cp "$claude_dir/settings.json.template" "$HOME/.claude/settings.json"
+            log_success "已创建配置文件，请编辑填入真实值"
+            ${EDITOR:-vi} "$HOME/.claude/settings.json"
+        fi
+    fi
 }
 
-# Stub: Restore plugins (Task 3)
+# Restore plugins
 claude_restore_plugins() {
     local repo_dir=$1
-    log_warning "插件恢复功能尚未实现"
+    local plugin_manifest="$repo_dir/claude/plugins/installed_plugins.json"
+
+    if [[ ! -f "$plugin_manifest" ]]; then
+        log_warning "未找到插件清单，跳过"
+        return 0
+    fi
+
+    log_info "发现插件清单"
+
+    # Parse and display plugins
+    local plugins=($(jq -r '.plugins | keys[]' "$plugin_manifest"))
+    local plugin_count=${#plugins[@]}
+
+    if [[ $plugin_count -eq 0 ]]; then
+        log_info "没有需要安装的插件"
+        return 0
+    fi
+
+    log_info "共 $plugin_count 个插件："
+    for plugin in "${plugins[@]}"; do
+        local version=$(jq -r ".plugins[\"$plugin\"][0].version" "$plugin_manifest")
+        echo "  - $plugin (版本: $version)"
+    done
+    echo ""
+
+    # Confirm installation
+    if ! confirm "是否安装这些插件？"; then
+        log_info "跳过插件安装"
+        return 0
+    fi
+
+    # Install plugins
+    local success_count=0
+    local fail_count=0
+
+    for plugin in "${plugins[@]}"; do
+        log_info "正在安装 $plugin..."
+
+        if claude plugin install "$plugin" 2>&1 | while read line; do
+            echo "  $line"
+        done; then
+            log_success "已安装 $plugin"
+            ((success_count++))
+        else
+            log_error "安装 $plugin 失败"
+            ((fail_count++))
+        fi
+    done
+
+    echo ""
+    log_info "插件安装完成: 成功 $success_count, 失败 $fail_count"
 }
 
-# Stub: Restore skills (Task 6)
+# Restore skills
 claude_restore_skills() {
     local repo_dir=$1
-    log_warning "技能恢复功能尚未实现"
+    local skills_dir="$repo_dir/claude/skills"
+
+    if [[ ! -d "$skills_dir" ]]; then
+        log_warning "未找到技能备份，跳过"
+        return 0
+    fi
+
+    local target_dir="$HOME/.claude/skills"
+    mkdir -p "$target_dir"
+
+    # Restore git-based skills
+    local git_repos_file="$skills_dir/.git_repos.txt"
+    if [[ -f "$git_repos_file" ]]; then
+        log_info "发现 git 仓库技能清单"
+
+        local git_count=0
+        while IFS='|' read -r skill_name repo_url; do
+            [[ -z "$skill_name" ]] && continue
+
+            local target="$target_dir/$skill_name"
+
+            if [[ -e "$target" ]]; then
+                log_warning "$skill_name 已存在，跳过"
+                continue
+            fi
+
+            log_info "正在克隆 $skill_name 从 $repo_url"
+
+            if git clone "$repo_url" "$target" 2>&1; then
+                log_success "已克隆 $skill_name"
+                ((git_count++))
+            else
+                log_error "克隆 $skill_name 失败"
+            fi
+        done < "$git_repos_file"
+
+        [[ $git_count -gt 0 ]] && log_success "共克隆 $git_count 个 git 仓库技能"
+    fi
+
+    # Restore local skills
+    local local_count=0
+    for skill_dir in "$skills_dir"/*; do
+        [[ -d "$skill_dir" ]] || continue
+
+        local skill_name=$(basename "$skill_dir")
+        [[ "$skill_name" == ".git"* ]] && continue
+
+        if [[ -e "$target_dir/$skill_name" ]]; then
+            log_warning "本地技能 $skill_name 已存在，跳过"
+            continue
+        fi
+
+        log_info "正在复制本地技能: $skill_name"
+        cp -R "$skill_dir" "$target_dir/"
+
+        if [[ $? -eq 0 ]]; then
+            log_success "已复制本地技能: $skill_name"
+            ((local_count++))
+        else
+            log_error "复制本地技能 $skill_name 失败"
+        fi
+    done
+
+    [[ $local_count -gt 0 ]] && log_success "共复制 $local_count 个本地技能"
+}
+
+# Handle file conflicts
+claude_handle_conflict() {
+    local local_file=$1
+    local repo_file=$2
+
+    echo ""
+    log_warning "检测到文件冲突: $local_file"
+    echo ""
+    echo "请选择操作："
+    echo "  1) 查看差异 (diff)"
+    echo "  2) 使用本地版本 (保留当前文件)"
+    echo "  3) 使用仓库版本 (本地文件备份为 .bak)"
+    echo "  4) 手动编辑"
+    echo "  5) 跳过"
+    echo ""
+    echo -n "选择 [1-5]: "
+
+    read -k1 choice
+    echo ""
+
+    case $choice in
+        1)
+            diff "$local_file" "$repo_file" | less
+            claude_handle_conflict "$local_file" "$repo_file"
+            ;;
+        2)
+            log_info "保留本地版本"
+            return 1
+            ;;
+        3)
+            cp "$local_file" "${local_file}.bak"
+            cp "$repo_file" "$local_file"
+            log_success "已使用仓库版本，本地文件备份为 ${local_file}.bak"
+            return 0
+            ;;
+        4)
+            ${EDITOR:-vi} "$local_file"
+            return 0
+            ;;
+        5)
+            log_info "跳过"
+            return 1
+            ;;
+        *)
+            log_error "无效选择"
+            return 1
+            ;;
+    esac
+}
+
+# Ask user for confirmation
+confirm() {
+    local prompt="$1"
+    local default="${2:-n}"
+
+    if [[ $default == "y" ]]; then
+        prompt="$prompt [Y/n]"
+    else
+        prompt="$prompt [y/N]"
+    fi
+
+    echo -n "$prompt "
+    read -k1 answer
+    echo ""
+
+    if [[ -z "$answer" ]]; then
+        [[ $default == "y" ]]
+    else
+        [[ $answer =~ ^[Yy]$ ]]
+    fi
 }
 
 # Stub: Check config status (Task 10)
