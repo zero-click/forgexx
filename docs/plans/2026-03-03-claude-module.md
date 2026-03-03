@@ -8,6 +8,14 @@
 
 **Tech Stack:** Zsh scripting, jq for JSON processing, Git for version control, Claude Code CLI for plugin management
 
+**Development Branch:** `feature/claude-module`
+
+**Important:**
+- All development MUST be done on the `feature/claude-module` branch
+- DO NOT merge to `main` automatically
+- Wait for user review and manual merge approval
+- User will handle the merge after completion
+
 ---
 
 ## Task 1: Create Module Skeleton
@@ -1031,3 +1039,31 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 - Design document: `docs/plans/2026-03-03-claude-module-design.md`
 - Forgexx architecture: `CLAUDE.md`
 - Module development: See existing modules in `lib/modules/`
+
+---
+
+## Post-Completion Actions
+
+**After all tasks are completed:**
+
+1. **DO NOT merge to main**
+2. **Push feature branch to remote:**
+   ```bash
+   git push origin feature/claude-module
+   ```
+3. **Create pull request** (optional) or notify user
+4. **Wait for user review and approval**
+5. **User will handle merge manually:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git merge feature/claude-module
+   # Review and resolve any conflicts
+   git push origin main
+   ```
+
+**Branch cleanup** (after successful merge):
+```bash
+git branch -d feature/claude-module
+git push origin --delete feature/claude-module
+```
