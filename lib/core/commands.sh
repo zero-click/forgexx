@@ -287,11 +287,18 @@ CONFIGURATION:
     FORGEXX_LOG_LEVEL     - Set log level (0-5)
 
 MODULES:
-  homebrew   - Homebrew packages and casks
+  claude     - Claude Code configuration, plugins, and skills
   dotfiles   - Dotfiles using GNU stow
-  vscode     - VS Code settings and extensions
+  git        - Git configuration (.gitconfig, .gitignore_global)
+  homebrew   - Homebrew packages and casks
+  iterm2     - iTerm2 preferences and profiles
   npm        - npm global packages
+  ssh        - SSH configuration and public keys
+  tmux       - Tmux configuration with TPM plugin manager
+  vim        - Vim configuration with Vundle plugin manager
+  vscode     - VS Code settings and extensions
+  zsh        - Zsh configuration with zplug plugin manager
 
-For more information, visit: https://github.com/woosley/forgexx
+For more information, visit: https://github.com/zero-click/forgexx
 EOF
 }

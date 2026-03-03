@@ -18,7 +18,7 @@ Forgexx 是一个轻量级、模块化的 CLI 工具，旨在通过 GitHub 在�
 
 ```zsh
 # 克隆仓库
-git clone https://github.com/woosley/forgexx.git ~/forgexx
+git clone https://github.com/zero-click/forgexx.git ~/forgexx
 
 # 添加到 PATH (建议添加到 .zshrc)
 export PATH="$PATH:~/forgexx/bin"
