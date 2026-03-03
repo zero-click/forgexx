@@ -184,7 +184,7 @@ claude_backup_skills() {
     mkdir -p "$skills_dir"
 
     local git_repos_file="$skills_dir/.git_repos.txt"
-    > "$git_repos_file"  # Empty the file
+    : > "$git_repos_file"  # Empty the file
 
     local local_count=0
     local git_count=0
