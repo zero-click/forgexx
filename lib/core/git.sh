@@ -170,17 +170,12 @@ git_current_branch() {
     git rev-parse --abbrev-ref HEAD
 }
 
-# Sync: pull, then stage, commit, and push
+# Sync: stage, commit, and push (assumes caller has already pulled if needed)
 git_sync() {
     local repo_dir=$1
     local message=${2:-"Update configs"}
     local auto_push=${3:-false}
     local branch=${4:-main}
-
-    # Pull first to get latest changes
-    if ! git_pull "$repo_dir" "$branch"; then
-        log_warning "Failed to pull, continuing anyway..."
-    fi
 
     # Stage changes
     git_stage_all "$repo_dir"

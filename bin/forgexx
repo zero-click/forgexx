@@ -28,6 +28,7 @@ source "$LIB_DIR/modules/git.sh"
 source "$LIB_DIR/modules/tmux.sh"
 source "$LIB_DIR/modules/vim.sh"
 source "$LIB_DIR/modules/zsh.sh"
+source "$LIB_DIR/modules/claude.sh"
 
 # Version
 FORGEXX_VERSION="0.1.0"
