@@ -22,6 +22,9 @@ claude_backup() {
     # Backup configuration files
     claude_backup_config "$repo_dir"
 
+    # Backup marketplaces manifest
+    claude_backup_marketplaces "$repo_dir"
+
     # Backup plugins manifest
     claude_backup_plugins "$repo_dir"
 
@@ -45,7 +48,10 @@ claude_restore() {
     # Restore configuration files
     claude_restore_config "$repo_dir"
 
-    # Restore plugins
+    # Restore marketplaces (插件源)
+    claude_restore_marketplaces "$repo_dir"
+
+    # Restore plugins (依赖 marketplaces)
     claude_restore_plugins "$repo_dir"
 
     # Restore skills
@@ -65,6 +71,11 @@ claude_status() {
     # Check config files
     echo "📄 Configuration Files:"
     claude_check_config "$repo_dir"
+
+    # Check marketplaces
+    echo ""
+    echo "🏪 Marketplaces:"
+    claude_check_marketplaces "$repo_dir"
 
     # Check plugins
     echo ""
@@ -168,6 +179,56 @@ claude_backup_plugins() {
 
     local plugin_count=$(jq '.plugins | length' "$plugins_dir/installed_plugins.json")
     log_success "已备份 $plugin_count 个插件清单"
+}
+
+# Backup marketplaces manifest
+claude_backup_marketplaces() {
+    local repo_dir=$1
+    local marketplaces_dir="$repo_dir/claude/marketplaces"
+    local source_dir="$HOME/.claude/plugins/marketplaces"
+
+    if [[ ! -d "$source_dir" ]]; then
+        log_warning "未找到 marketplaces 目录，跳过"
+        return 0
+    fi
+
+    mkdir -p "$marketplaces_dir"
+    local git_repos_file="$marketplaces_dir/git_repos.txt"
+    : > "$git_repos_file"  # Empty the file
+
+    local git_count=0
+
+    for marketplace_path in "$source_dir"/*; do
+        [[ -e "$marketplace_path" ]] || continue
+        local marketplace_name=$(basename "$marketplace_path")
+
+        # Skip hidden directories
+        [[ "$marketplace_name" == ".git"* ]] && continue
+
+        # Check if it's a git repository
+        local git_dir=$(git -C "$marketplace_path" rev-parse --git-dir 2>/dev/null || echo "")
+
+        if [[ -n "$git_dir" ]]; then
+            # Get the remote URL
+            local remote_url=$(git -C "$marketplace_path" remote get-url origin 2>/dev/null || echo "")
+            if [[ -n "$remote_url" ]]; then
+                echo "$marketplace_name|$remote_url" >> "$git_repos_file"
+                ((git_count++))
+                log_info "记录 marketplace: $marketplace_name"
+            else
+                log_warning "marketplace $marketplace_name 没有 origin remote，跳过"
+            fi
+        fi
+    done
+
+    if [[ $git_count -gt 0 ]]; then
+        log_success "已记录 $git_count 个 marketplace"
+    fi
+
+    # Remove git_repos.txt if empty
+    if [[ ! -s "$git_repos_file" ]]; then
+        rm "$git_repos_file"
+    fi
 }
 
 # Backup skills
@@ -281,6 +342,60 @@ claude_restore_config() {
             log_success "已创建配置文件，请编辑填入真实值"
             ${EDITOR:-vi} "$HOME/.claude/settings.json"
         fi
+    fi
+}
+
+# Restore marketplaces
+claude_restore_marketplaces() {
+    local repo_dir=$1
+    local marketplaces_dir="$repo_dir/claude/marketplaces"
+    local target_dir="$HOME/.claude/plugins/marketplaces"
+
+    # Check if backup exists
+    local git_repos_file="$marketplaces_dir/git_repos.txt"
+    if [[ ! -f "$git_repos_file" ]]; then
+        log_warning "未找到 marketplace 清单，跳过"
+        return 0
+    fi
+
+    mkdir -p "$target_dir"
+
+    log_info "发现 marketplace 清单"
+
+    local git_count=0
+    local success=0
+    local failed=0
+    local skipped=0
+
+    while IFS='|' read -r marketplace_name repo_url; do
+        [[ -z "$marketplace_name" ]] && continue
+
+        local target="$target_dir/$marketplace_name"
+
+        # Check if already exists
+        if [[ -e "$target" ]]; then
+            log_info "marketplace $marketplace_name 已存在，跳过"
+            ((skipped++))
+            continue
+        fi
+
+        log_info "正在克隆 marketplace $marketplace_name..."
+
+        if git clone "$repo_url" "$target" 2>&1; then
+            log_success "已克隆 $marketplace_name"
+            ((success++))
+            ((git_count++))
+        else
+            log_error "克隆 $marketplace_name 失败"
+            ((failed++))
+        fi
+    done < "$git_repos_file"
+
+    echo ""
+    log_info "marketplace 恢复完成: 成功 $success, 跳过 $skipped, 失败 $failed"
+
+    if [[ $git_count -gt 0 ]]; then
+        log_success "共克隆 $git_count 个 marketplace"
     fi
 }
 
@@ -525,6 +640,36 @@ claude_check_plugins() {
         local version=$(jq -r ".plugins[\"$plugin\"][0].version" "$plugin_file" 2>/dev/null || echo "unknown")
         echo "    - $plugin (v$version)"
     done
+}
+
+# Check marketplaces status
+claude_check_marketplaces() {
+    local repo_dir=$1
+    local marketplaces_dir="$repo_dir/claude/marketplaces"
+
+    if [[ ! -d "$marketplaces_dir" ]]; then
+        echo "  ✗ 未找到 marketplace 备份"
+        return
+    fi
+
+    local git_repos_file="$marketplaces_dir/git_repos.txt"
+    if [[ ! -f "$git_repos_file" ]]; then
+        echo "  ✗ 未找到 marketplace 清单"
+        return
+    fi
+
+    local count=$(wc -l < "$git_repos_file" 2>/dev/null | tr -d ' ')
+    echo "  ✓ 已备份 $count 个 marketplace"
+
+    # Show marketplace list and installation status
+    while IFS='|' read -r marketplace_name repo_url; do
+        [[ -z "$marketplace_name" ]] && continue
+        if [[ -d "$HOME/.claude/plugins/marketplaces/$marketplace_name" ]]; then
+            echo "    ✓ $marketplace_name"
+        else
+            echo "    ✗ $marketplace_name [未安装]"
+        fi
+    done < "$git_repos_file"
 }
 
 # Check skills status
