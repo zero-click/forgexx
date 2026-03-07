@@ -349,7 +349,6 @@ claude_restore_config() {
 claude_restore_marketplaces() {
     local repo_dir=$1
     local marketplaces_dir="$repo_dir/claude/marketplaces"
-    local target_dir="$HOME/.claude/plugins/marketplaces"
 
     # Check if backup exists
     local git_repos_file="$marketplaces_dir/git_repos.txt"
@@ -358,44 +357,33 @@ claude_restore_marketplaces() {
         return 0
     fi
 
-    mkdir -p "$target_dir"
-
     log_info "发现 marketplace 清单"
 
-    local git_count=0
     local success=0
     local failed=0
-    local skipped=0
 
     while IFS='|' read -r marketplace_name repo_url; do
         [[ -z "$marketplace_name" ]] && continue
 
-        local target="$target_dir/$marketplace_name"
+        log_info "正在添加 marketplace $marketplace_name..."
 
-        # Check if already exists
-        if [[ -e "$target" ]]; then
-            log_info "marketplace $marketplace_name 已存在，跳过"
-            ((skipped++))
-            continue
-        fi
-
-        log_info "正在克隆 marketplace $marketplace_name..."
-
-        if git clone "$repo_url" "$target" 2>&1; then
-            log_success "已克隆 $marketplace_name"
+        # Use claude plugin marketplace add command instead of git clone
+        if claude plugin marketplace add "$repo_url" 2>&1 | while read line; do
+            echo "  $line"
+        done; then
+            log_success "已添加 $marketplace_name"
             ((success++))
-            ((git_count++))
         else
-            log_error "克隆 $marketplace_name 失败"
+            log_error "添加 $marketplace_name 失败"
             ((failed++))
         fi
     done < "$git_repos_file"
 
     echo ""
-    log_info "marketplace 恢复完成: 成功 $success, 跳过 $skipped, 失败 $failed"
+    log_info "marketplace 恢复完成: 成功 $success, 失败 $failed"
 
-    if [[ $git_count -gt 0 ]]; then
-        log_success "共克隆 $git_count 个 marketplace"
+    if [[ $success -gt 0 ]]; then
+        log_success "共添加 $success 个 marketplace"
     fi
 }
 
