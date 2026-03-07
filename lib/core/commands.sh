@@ -74,6 +74,13 @@ cmd_backup() {
     local commit_msg_val=$(config_get FORGEXX_COMMIT_MSG)
     local commit_msg=${commit_msg_val:-"Backup from {{hostname}} at {{timestamp}}"}
 
+    # Check if AUTO_PUSH is not set in config
+    if [[ -z "$auto_push" ]]; then
+        # Default to true for new installs
+        auto_push="true"
+        log_info "Auto-push enabled by default. To disable, set: export FORGEXX_AUTO_PUSH=false"
+    fi
+
     git_sync "$LOCAL_REPO" "$commit_msg" "$auto_push"
 
     if [[ $failed -eq 0 ]]; then
@@ -285,6 +292,8 @@ CONFIGURATION:
     FORGEXX_CONFIG_FILE   - Override config file path
     FORGEXX_REPO_DIR      - Override repository directory
     FORGEXX_LOG_LEVEL     - Set log level (0-5)
+    FORGEXX_AUTO_PUSH     - Auto-push to GitHub after backup (default: true)
+    FORGEXX_COMMIT_MSG    - Custom commit message template
 
 MODULES:
   claude     - Claude Code configuration, plugins, and skills

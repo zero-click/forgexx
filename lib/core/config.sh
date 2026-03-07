@@ -30,6 +30,12 @@ GITHUB_REPO="${GITHUB_REPO}"
 LOCAL_REPO="${LOCAL_REPO}"
 ENABLED_MODULES="${ENABLED_MODULES}"
 
+# Auto-push after backup (set to 'false' to disable)
+FORGEXX_AUTO_PUSH="${FORGEXX_AUTO_PUSH:-true}"
+
+# Custom commit message (optional)
+# FORGEXX_COMMIT_MSG="${FORGEXX_COMMIT_MSG:-Backup from {{hostname}} at {{timestamp}}}"
+
 EOF
 }
 
@@ -78,11 +84,15 @@ config_validate() {
 
 # Print current configuration
 config_print() {
+    local auto_push_status="${FORGEXX_AUTO_PUSH:-false}"
+    [[ "$auto_push_status" == "true" ]] && auto_push_status="Enabled ✓" || auto_push_status="Disabled ✗"
+
     cat << EOF
 Forgexx Configuration
 =====================
-GitHub Repo:    ${GITHUB_REPO:-<not set>}
-Local Repo:    ${LOCAL_REPO:-$FORGEXX_REPO_DIR}
+GitHub Repo:       ${GITHUB_REPO:-<not set>}
+Local Repo:       ${LOCAL_REPO:-$FORGEXX_REPO_DIR}
+Auto Push:        $auto_push_status
 Enabled Modules:
 $(for module in ${=ENABLED_MODULES}; do echo "  - $module"; done)
 EOF
